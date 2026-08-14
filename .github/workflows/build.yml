@@ -1,13 +1,14 @@
 name: Build LSPosed Module APK
 
 on:
-  workflow_dispatch:   # 允许手动点击运行
+  workflow_dispatch:
   push:
     branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,40 +18,26 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Grant execute permission for gradlew
-        run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-          else
-            echo "Creating gradlew..."
-            # 如果没有 wrapper，使用 gradle 命令
-          fi
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build Debug APK
         run: |
-          # 确保有 local.properties
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          
-          # 使用 gradle 构建（GitHub runner 自带较好的环境）
+          chmod +x gradlew || true
+          # 使用 gradle wrapper，如果不存在则用系统方式
           if [ -f ./gradlew ]; then
             ./gradlew assembleDebug --no-daemon --stacktrace
           else
-            # 备用：安装 gradle 后构建
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq gradle
-            gradle assembleDebug --no-daemon --stacktrace
-          fi
-
-      - name: Build Release APK (unsigned)
-        run: |
-          if [ -f ./gradlew ]; then
-            ./gradlew assembleRelease --no-daemon || true
-          else
-            gradle assembleRelease --no-daemon || true
+            gradle wrapper --gradle-version 8.2
+            ./gradlew assembleDebug --no-daemon --stacktrace
           fi
 
       - name: Upload Debug APK
@@ -58,16 +45,7 @@ jobs:
         with:
           name: SdcardCreateHook-debug
           path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SdcardCreateHook-release
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
-
-      - name: List outputs
-        run: |
-          echo "=== APK 文件 ==="
-          find app/build/outputs -name "*.apk" -ls || echo "未找到 APK"
+      - name: List APK
+        run: find app/build/outputs -name "*.apk" -ls
