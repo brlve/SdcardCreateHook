@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 推荐作用域：建议勾选「系统框架」+ 常用文件管理器 + 需要监视的 App -->
+    <string-array name="xposed_scope">
+        <item>android</item>
+        <item>com.android.providers.media.module</item>
+        <item>com.android.providers.media</item>
+        <item>com.miui.gallery</item>
+        <item>com.android.fileexplorer</item>
+        <item>com.tencent.mm</item>
+        <item>com.tencent.mobileqq</item>
+    </string-array>
+</resources>
